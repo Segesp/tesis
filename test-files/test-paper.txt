@@ -1,0 +1,24 @@
+ARTÍCULO CIENTÍFICO DE PRUEBA
+
+Título: Un estudio sobre la gestión bibliográfica automatizada
+Autores: Dr. Juan Pérez, Dra. María González
+Año: 2024
+
+RESUMEN
+Esta investigación presenta un sistema automatizado para la gestión de referencias bibliográficas científicas utilizando técnicas de inteligencia artificial y procesamiento de lenguaje natural. El sistema propuesto integra extracción automática de metadatos, búsqueda semántica y generación de referencias en formato APA.
+
+INTRODUCCIÓN
+La gestión de referencias bibliográficas es una tarea fundamental en la investigación académica. Los sistemas tradicionales requieren entrada manual de datos, lo que puede ser propenso a errores y consume tiempo valioso de los investigadores.
+
+METODOLOGÍA
+Se desarrolló un sistema que utiliza Apache Tika para extracción de texto, embeddings vectoriales para búsqueda semántica, y algoritmos de procesamiento de lenguaje natural para generar automáticamente referencias en formato APA.
+
+RESULTADOS
+El sistema demostró una precisión del 95% en la extracción de metadatos y una reducción del 80% en el tiempo requerido para gestionar referencias bibliográficas.
+
+CONCLUSIONES
+La automatización de la gestión bibliográfica mediante IA presenta ventajas significativas para la comunidad académica, mejorando la eficiencia y reduciendo errores en el proceso de investigación.
+
+REFERENCIAS
+[1] Smith, J. (2023). Automated bibliography management systems. Journal of Academic Tools, 15(3), 45-62.
+[2] García, L., & Martin, R. (2024). AI in academic research workflows. Computer Science Review, 28, 112-128.

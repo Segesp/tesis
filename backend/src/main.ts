@@ -1,79 +1,83 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs/promises';
 import cors from 'cors';
 import { extractText, extractMetadata } from './services/tikaClient';
+import { connectDB } from './config/db';
+import { Paper } from './models/Paper';
 
 const app = express();
 app.use(cors());
 
-// Configurar multer para recibir un solo archivo PDF
+// Configurar multer para recibir un solo archivo PDF (modo test: permite text/plain)
 const upload = multer({
   dest: 'uploads/',
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype !== 'application/pdf') {
-      return cb(new Error('Solo se permiten archivos PDF'), false);
+  fileFilter: (req: Request, file: any, cb: multer.FileFilterCallback) => {
+    // Temporalmente permitir archivos de texto para pruebas
+    if (file.mimetype !== 'application/pdf' && file.mimetype !== 'text/plain') {
+      // Rechaza el archivo y pasa un error
+      // El tipo de cb aquí espera un Error o `undefined` para el primer argumento
+      return cb(new Error('Solo se permiten archivos PDF o texto para pruebas'));
     }
+    // Acepta el archivo
     cb(null, true);
   }
 });
 
-// Asegurar carpeta de almacenamiento de resultados
-async function ensureStorageDir() {
-  const dir = path.resolve('storage');
-  try {
-    await fs.mkdir(dir, { recursive: true });
-  } catch (err) {
-    console.error('Error creando directorio storage', err);
-  }
-}
-
-app.post('/upload', upload.single('pdf'), async (req, res) => {
+app.post('/upload', upload.single('pdf'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se recibió ningún archivo.' });
     }
 
     const filePath = path.resolve(req.file.path);
-    // Leer buffer del PDF
     const buffer = await fs.readFile(filePath);
 
-    // Extraer texto y metadatos
     const [text, metadata] = await Promise.all([
       extractText(buffer),
       extractMetadata(buffer)
     ]);
 
-    // Asegurar directorio storage
-    await ensureStorageDir();
-
     const baseName = path.parse(req.file.filename).name;
-    const textPath = path.resolve(`storage/${baseName}.text.json`);
-    const metaPath = path.resolve(`storage/${baseName}.meta.json`);
 
-    // Guardar resultados como JSON
-    await fs.writeFile(textPath, JSON.stringify({ text }, null, 2));
-    await fs.writeFile(metaPath, JSON.stringify(metadata, null, 2));
+    const paper = await Paper.create({
+      filename: req.file.originalname,
+      tikaId: baseName,
+      text,
+      metadata,
+    });
 
-    // Borrar archivo subido
     await fs.unlink(filePath);
 
     return res.status(201).json({
-      message: 'PDF procesado correctamente',
-      data: {
-        id: baseName,
-        metadata
-      }
+      message: 'PDF procesado y guardado en MongoDB',
+      paper
     });
   } catch (err: any) {
     console.error('Error al procesar PDF:', err);
-    return res.status(500).json({ error: 'Error al procesar el PDF.' });
+    if (req.file && req.file.path) {
+      try {
+        await fs.unlink(path.resolve(req.file.path));
+      } catch (unlinkErr) {
+        console.error('Error borrando archivo temporal tras fallo:', unlinkErr);
+      }
+    }
+    return res.status(500).json({ error: 'Error al procesar el PDF.', details: err.message });
   }
 });
 
 // Healthcheck
-app.get('/health', (_req, res) => res.send('OK'));
+app.get('/health', (req: Request, res: Response) => res.send('OK'));
 
 const PORT = Number(process.env.PORT) || 4000;
-app.listen(PORT, () => console.log(`Backend escuchando en puerto ${PORT}`));
+
+(async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => console.log(`Backend escuchando en puerto ${PORT}`));
+  } catch (error) {
+    console.error('Error al iniciar el servidor:', error);
+    process.exit(1);
+  }
+})();

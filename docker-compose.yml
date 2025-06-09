@@ -21,6 +21,17 @@ services:
     volumes:
       - weaviate_data:/var/lib/weaviate
 
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=example
+
   backend:
     build:
       context: ./backend
@@ -32,10 +43,12 @@ services:
       - TIKA_URL=http://tika-server:9998
       - WEAVIATE_HOST=weaviate
       - WEAVIATE_PORT=8080
+      - MONGO_URI=mongodb://root:example@mongodb:27017/tesis?authSource=admin
       - NODE_ENV=development
     depends_on:
       - tika-server
       - weaviate
+      - mongodb
     volumes:
       - ./backend/logs:/app/logs
       - ./backend/uploads:/app/uploads
@@ -52,3 +65,4 @@ services:
 
 volumes:
   weaviate_data: {}
+  mongodb_data: {}
